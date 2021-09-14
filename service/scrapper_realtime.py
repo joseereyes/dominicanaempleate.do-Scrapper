@@ -56,7 +56,7 @@ def realtime_scrapper():
     driver.close()
     driver.quit()
 
-    for i, item in enumerate(jobs_arr[5:6]):
+    for i, item in enumerate(jobs_arr):
 
         index = webdriver.Chrome(PATH)
         
