@@ -56,7 +56,7 @@ def realtime_scrapper():
     driver.close()
     driver.quit()
 
-    for i, item in enumerate(jobs_arr):
+    for i, item in enumerate(jobs_arr[5:6]):
 
         index = webdriver.Chrome(PATH)
         
@@ -78,16 +78,17 @@ def realtime_scrapper():
         if len(email) > 0:
 
             item["email"] = email[0]
-
             ref = db.reference('Jobs')
-            data = ref.child(item["title"]).get()
-
+            item_title = str(item["title"].replace(".",""))
+            data = ref.child(item_title).get()
+            
             if data is None:
-                ref.child(item["title"]).set(item)
+              
+                ref.child(str(item_title)).set(item)
             else:
                 if item["date"] != data["date"]:
-                    item["title"] = str(item["title"]) + " dominicanaempleate do " + item["date"]
-                    ref.child(item["title"]).set(item)
+                    item_title = str(item_title) + str(" dominicanaempleate do " + item["date"])
+                    ref.child(item_title).set(item)
 
         else:
             del jobs_arr[i]
