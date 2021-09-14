@@ -20,9 +20,14 @@ default_app = firebase_admin.initialize_app(
 
 def realtime_scrapper():
 
-    driver = webdriver.Chrome(PATH)
-    driver.get(url)
-    time.sleep(2)
+    try:
+        driver = webdriver.Chrome(PATH)
+        driver.get(url)
+        time.sleep(2)
+    except:
+        driver.close()
+        time.sleep(600)
+        realtime_scrapper()
 
     jobs_list = driver.find_elements_by_class_name("articulo")
     jobs_arr = []
@@ -51,15 +56,21 @@ def realtime_scrapper():
 
     for i, item in enumerate(jobs_arr):
 
-        index = webdriver.Chrome(PATH)
-        index.get(item["href"])
-        time.sleep(2)
+        try:
+            index = webdriver.Chrome(PATH)
+            index.get(item["href"])
+            time.sleep(2)
+        except:
+            index.close()
+            time.sleep(600)
+            realtime_scrapper()
+            
 
         job_body = index.find_element_by_class_name("contenido")
         item["content"] = job_body.text
 
         email = re.findall(r"[a-zA-Z0-9\.\-+_]+@[a-zA-Z0-9\.\-+_]+\.[a-zA-Z]+",
-                           item["content"])
+                        item["content"])
 
         if len(email) > 0:
 
@@ -77,14 +88,14 @@ def realtime_scrapper():
 
         else:
             del jobs_arr[i]
-
-        driver.delete_all_cookies()
-        driver.close()
-        driver.quit()
         
         index.delete_all_cookies()
         index.close()
         index.quit()
         
-        del index,driver
+        del index
         gc.collect()
+
+    
+    time.sleep(300)
+    realtime_scrapper()
