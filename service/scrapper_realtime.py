@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 PATH = "service/chromedriver"
 url = "https://www.tuempleord.do/"
+exception_time = 10
 
 cred = credentials.Certificate("service/config/files/realtime.json")
 default_app = firebase_admin.initialize_app(
@@ -19,14 +20,15 @@ default_app = firebase_admin.initialize_app(
 
 
 def realtime_scrapper():
+    
+    driver = webdriver.Chrome(PATH)
 
     try:
-        driver = webdriver.Chrome(PATH)
         driver.get(url)
         time.sleep(2)
     except:
         driver.close()
-        time.sleep(600)
+        time.sleep(exception_time)
         realtime_scrapper()
 
     jobs_list = driver.find_elements_by_class_name("articulo")
@@ -56,13 +58,14 @@ def realtime_scrapper():
 
     for i, item in enumerate(jobs_arr):
 
+        index = webdriver.Chrome(PATH)
+        
         try:
-            index = webdriver.Chrome(PATH)
             index.get(item["href"])
             time.sleep(2)
         except:
             index.close()
-            time.sleep(600)
+            time.sleep(exception_time)
             realtime_scrapper()
             
 
