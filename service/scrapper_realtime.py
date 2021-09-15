@@ -26,12 +26,13 @@ def realtime_scrapper():
     try:
         driver.get(url)
         time.sleep(2)
+        jobs_list = driver.find_elements_by_class_name("articulo")
     except:
         driver.close()
         time.sleep(exception_time)
         realtime_scrapper()
 
-    jobs_list = driver.find_elements_by_class_name("articulo")
+    
     jobs_arr = []
 
     for x in jobs_list:
@@ -63,14 +64,15 @@ def realtime_scrapper():
         try:
             index.get(item["href"])
             time.sleep(2)
+            job_body = index.find_element_by_class_name("contenido")
+            item["content"] = job_body.text
         except:
             index.close()
             time.sleep(exception_time)
             realtime_scrapper()
             
 
-        job_body = index.find_element_by_class_name("contenido")
-        item["content"] = job_body.text
+       
 
         email = re.findall(r"[a-zA-Z0-9\.\-+_]+@[a-zA-Z0-9\.\-+_]+\.[a-zA-Z]+",
                         item["content"])
