@@ -59,49 +59,45 @@ def realtime_scrapper():
 
     for i, item in enumerate(jobs_arr):
 
-        index = webdriver.Chrome(PATH)
-        
         try:
+            index = webdriver.Chrome(PATH)
             index.get(item["href"])
             time.sleep(2)
             job_body = index.find_element_by_class_name("contenido")
             item["content"] = job_body.text
+       
+            email = re.findall(r"[a-zA-Z0-9\.\-+_]+@[a-zA-Z0-9\.\-+_]+\.[a-zA-Z]+",item["content"])
+
+            if len(email) > 0:
+
+                item["email"] = email[0]
+                ref = db.reference('Jobs')
+                item_title = str(item["title"].replace(".",""))
+                data = ref.child(item_title).get()
+                
+                if data is None:
+                
+                    ref.child(str(item_title)).set(item)
+                else:
+                    if item["date"] != data["date"]:
+                        item_title = str(item_title) + str(" dominicanaempleate do " + item["date"])
+                        ref.child(item_title).set(item)
+
+            else:
+                del jobs_arr[i]
+            
+            index.delete_all_cookies()
+            index.close()
+            index.quit()
+            
+            del index
+            gc.collect()
+            
         except:
             index.close()
             time.sleep(exception_time)
             realtime_scrapper()
             
-
-       
-
-        email = re.findall(r"[a-zA-Z0-9\.\-+_]+@[a-zA-Z0-9\.\-+_]+\.[a-zA-Z]+",
-                        item["content"])
-
-        if len(email) > 0:
-
-            item["email"] = email[0]
-            ref = db.reference('Jobs')
-            item_title = str(item["title"].replace(".",""))
-            data = ref.child(item_title).get()
-            
-            if data is None:
-              
-                ref.child(str(item_title)).set(item)
-            else:
-                if item["date"] != data["date"]:
-                    item_title = str(item_title) + str(" dominicanaempleate do " + item["date"])
-                    ref.child(item_title).set(item)
-
-        else:
-            del jobs_arr[i]
-        
-        index.delete_all_cookies()
-        index.close()
-        index.quit()
-        
-        del index
-        gc.collect()
-
     
     time.sleep(300)
     realtime_scrapper()
