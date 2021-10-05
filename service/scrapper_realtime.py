@@ -35,7 +35,7 @@ def realtime_scrapper():
     
     jobs_arr = []
 
-    for x in jobs_list[7:8]:
+    for x in jobs_list:
 
         title = x.find_element_by_class_name("resumido").text
         category = x.find_element_by_class_name("categoria").text
@@ -54,7 +54,7 @@ def realtime_scrapper():
         }
         jobs_arr.append(object)
         
-        print(jobs_arr[0]["title"])
+
 
     time.sleep(1)
     driver.delete_all_cookies()
