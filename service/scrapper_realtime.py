@@ -35,22 +35,26 @@ def realtime_scrapper():
     
     jobs_arr = []
 
-    for x in jobs_list:
+    for x in jobs_list[7:8]:
 
         title = x.find_element_by_class_name("resumido").text
+        category = x.find_element_by_class_name("categoria").text
         date = x.find_element_by_class_name("date").text
         desc = x.find_element_by_class_name("resumen").text
         loc = x.find_element_by_class_name("provincia").text
         href = x.find_element_by_class_name("ver-mas").get_attribute('href')
 
         object = {
-            "title": title,
+            "title": title.replace("/"," "),
             "date": date,
             "desc": desc,
             "loc": loc,
-            "href": href
+            "href": href,
+            "category": category
         }
         jobs_arr.append(object)
+        
+        print(jobs_arr[0]["title"])
 
     time.sleep(1)
     driver.delete_all_cookies()
