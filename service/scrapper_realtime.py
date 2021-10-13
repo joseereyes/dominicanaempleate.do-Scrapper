@@ -19,7 +19,11 @@ default_app = firebase_admin.initialize_app(
     cred, {'databaseURL': "https://jobs-realtime-default-rtdb.firebaseio.com"})
 
 
+
 def realtime_scrapper():
+    
+    from datetime import date
+    todayDate = date.today()
     
     driver = webdriver.Chrome(PATH)
 
@@ -36,6 +40,8 @@ def realtime_scrapper():
     jobs_arr = []
 
     for x in jobs_list:
+        
+     
 
         title = x.find_element_by_class_name("resumido").text
         category = x.find_element_by_class_name("categoria").text
@@ -50,7 +56,9 @@ def realtime_scrapper():
             "desc": desc,
             "loc": loc,
             "href": href,
-            "category": category
+            "category": category,
+            "dateReg" : str(todayDate)
+       
         }
         jobs_arr.append(object)
         
@@ -76,17 +84,16 @@ def realtime_scrapper():
 
                 item["email"] = email[0]
                 ref = db.reference('Jobs')
-                item_title = str(item["title"].replace(".",""))
-                data = ref.child(item_title).get()
                 
-                if data is None:
+                data = ref.order_by_child("title").equal_to(item["title"]).get()
                 
-                    ref.child(str(item_title)).set(item)
+                if data:
+                    for key,values in data.items():
+                        if item["date"] != values["date"]:
+                            ref.push(item)
                 else:
-                    if item["date"] != data["date"]:
-                        item_title = str(item_title) + str(" dominicanaempleate do " + item["date"])
-                        ref.child(item_title).set(item)
-
+                    ref.push(item)
+                    
             else:
                 del jobs_arr[i]
             
