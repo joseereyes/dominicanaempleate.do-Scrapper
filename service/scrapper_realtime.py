@@ -1,16 +1,22 @@
-import enum
 import firebase_admin
-from firebase_admin import credentials
 from firebase_admin import db
+from firebase_admin import credentials
 
-import zipfile
-import os, gc
+
 import re
+import enum
 import time
+import os, gc
+import zipfile
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
+import dateutil.parser as parser
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 
-PATH = "service/chromedriver"
+
+
+PATH = "service\chromedriver"
 url = "https://www.tuempleord.do/"
 exception_time = 10
 
@@ -19,97 +25,116 @@ default_app = firebase_admin.initialize_app(
     cred, {'databaseURL': "https://jobs-realtime-default-rtdb.firebaseio.com"})
 
 
-
 def realtime_scrapper():
-    
+
     from datetime import datetime
     todayDate = datetime.now()
- 
-    
+
     driver = webdriver.Chrome(PATH)
-
-    try:
-        driver.get(url)
-        time.sleep(2)
-        jobs_list = driver.find_elements_by_class_name("articulo")
-    except:
-        driver.close()
-        time.sleep(exception_time)
-        realtime_scrapper()
-
+   
     
     jobs_arr = []
-
+    
+    driver.get(url)
+    time.sleep(4)
+    jobs_list = driver.find_elements(By.CLASS_NAME, "job_listing")
+    time.sleep(2)
+    
     for x in jobs_list:
 
-        title = x.find_element_by_class_name("resumido").text
-        category = x.find_element_by_class_name("categoria").text
-        date = x.find_element_by_class_name("date").text
-        desc = x.find_element_by_class_name("resumen").text
-        loc = x.find_element_by_class_name("provincia").text
-        href = x.find_element_by_class_name("ver-mas").get_attribute('href')
+        each_List = x.find_elements(By.TAG_NAME, "a")
 
+        for y in each_List:
 
+            href = y.get_attribute('href')
 
-        object = {
-            "title": title.replace("/"," "),
-            "date": date,
-            "desc": desc,
-            "loc": loc,
-            "href": href,
-            "category": category,
-            "dateReg" : str(todayDate)
-       
-        }
-        jobs_arr.append(object)
-        
-
-    time.sleep(1)
+            object = {"href": href}
+            jobs_arr.append(object)
+            
+    
+    
+    
     driver.delete_all_cookies()
     driver.close()
     driver.quit()
+    time.sleep(2)
+    
+    
+    for y in jobs_arr:
+        
+        driver_2 = webdriver.Chrome(PATH)
+        action = ActionChains(driver_2)
+        driver_2.get(y["href"])
+        time.sleep(3)
+        
+        
+        job_title = driver_2.find_element(By.ID,"title").find_element(By.TAG_NAME,"h1").text
+        job_category = ''.join([i for i in str(driver_2.find_element(By.ID,"title").find_element(By.CLASS_NAME,"job-type").text) if not i.isdigit()])
+        job_date = driver_2.find_element(By.CLASS_NAME,"posted-date").text
+        job_description = driver_2.find_element(By.CLASS_NAME,"job_description").text
+        job_location = str(driver_2.find_element(By.CLASS_NAME,"location").text).split(":")[1]
+        
+        time.sleep(10)
+        driver_2.execute_script("window.scrollTo(0, 1000)")
+        apply_button = driver_2.find_element(By.TAG_NAME,"input")
+        
+        action.move_to_element(apply_button).perform() 
+        time.sleep(5)
+        apply_button.click()
+    
+        time.sleep(2)
+        
+        job_email = driver_2.find_element(By.CLASS_NAME,"job_application_email").text
+        time.sleep(2)
 
+        
+        y["title"]    = job_title
+        y["date"]     = str(todayDate)
+        y["desc"]     = job_description
+        y["loc"]      = job_location
+        y["category"] = job_category
+        y["dateReg"]  = str(todayDate)
+        y["email"]    = job_email
+        y["content"]  = job_description
+
+        driver_2.close()
+        
+  
+    time.sleep(2)
+
+    
     for i, item in enumerate(jobs_arr):
 
-
         try:
-            index = webdriver.Chrome(PATH)
-            index.get(item["href"])
             time.sleep(2)
-            job_body = index.find_element_by_class_name("contenido")
-            item["content"] = job_body.text.replace("\n","<br />")
-       
-            email = re.findall(r"[a-zA-Z0-9\.\-+_]+@[a-zA-Z0-9\.\-+_]+\.[a-zA-Z]+",item["content"])
 
-            if len(email) > 0:
+            
+            ref = db.reference('Jobs')
 
-                item["email"] = email[0]
-                ref = db.reference('Jobs')
-                
-                data = ref.order_by_child("title").equal_to(item["title"]).get()
-                
-                if data:
-                    for key,values in data.items():
-                        if item["date"] != values["date"]:
-                            ref.push(item)
-                else:
-                    ref.push(item)
+            data = ref.order_by_child("title").equal_to(item["title"]).get()
+
+            if data:
+                for key,values in data.items():
                     
+                    old_job_date = parser.parse(values["date"])
+                    new_job_date = parser.parse(item["date"])
+
+                    resutl1 = datetime.strftime(old_job_date, '%m-%d-%Y')
+                    resutl2 = datetime.strftime(new_job_date, '%m-%d-%Y')
+
+                    if (resutl1 != resutl2):
+                        ref.push(item)
             else:
-                del jobs_arr[i]
-            
-            index.delete_all_cookies()
-            index.close()
-            index.quit()
-            
-            del index
-            gc.collect()
-            
+                    ref.push(item)
+
+
+           
+
         except:
-            index.close()
             time.sleep(exception_time)
             realtime_scrapper()
-            
-    
+
+
+    gc.collect()
     time.sleep(300)
     realtime_scrapper()
