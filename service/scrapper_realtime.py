@@ -30,7 +30,9 @@ def realtime_scrapper():
     from datetime import datetime
     todayDate = datetime.now()
 
-    driver = webdriver.Chrome(PATH)
+    options = webdriver.ChromeOptions()
+    options.add_argument("--start-maximized")
+    driver = webdriver.Chrome(PATH,options=options)
    
     
     jobs_arr = []
@@ -62,7 +64,7 @@ def realtime_scrapper():
     
     for y in jobs_arr:
         
-        driver_2 = webdriver.Chrome(PATH)
+        driver_2 = webdriver.Chrome(PATH,options=options)
         action = ActionChains(driver_2)
         driver_2.get(y["href"])
         time.sleep(3)
@@ -75,19 +77,13 @@ def realtime_scrapper():
         job_location = str(driver_2.find_element(By.CLASS_NAME,"location").text).split(":")[1]
         
         time.sleep(10)
-        driver_2.execute_script("window.scrollTo(0, 1000)")
-        apply_button = driver_2.find_element(By.TAG_NAME,"input")
-        
-        action.move_to_element(apply_button).perform() 
-        time.sleep(5)
-        apply_button.click()
-    
+        driver_2.execute_script("window.scrollTo(0, 768)")
+        driver_2.execute_script('document.getElementsByClassName("application_button")[0].click()')
         time.sleep(2)
         
         job_email = driver_2.find_element(By.CLASS_NAME,"job_application_email").text
         time.sleep(2)
 
-        
         y["title"]    = job_title
         y["date"]     = str(todayDate)
         y["desc"]     = job_description
